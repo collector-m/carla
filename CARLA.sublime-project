@@ -9,6 +9,7 @@
 				".codelite",
 				".kdev4",
 				".vs",
+				".vscode",
 				"Binaries",
 				"Build",
 				"DerivedDataCache",
@@ -17,7 +18,8 @@
 				"Intermediate",
 				"Saved",
 				"Unreal/CarlaUE4/Content*",
-				"__pycache__"
+				"__pycache__",
+				"_site"
 			],
 			"file_exclude_patterns":
 			[
@@ -42,6 +44,7 @@
 	],
 	"settings":
 	{
+		"ensure_newline_at_eof_on_save": true,
 		"tab_size": 2,
 		"translate_tabs_to_spaces": true,
 		"trim_trailing_white_space_on_save": true
@@ -76,7 +79,7 @@
 		{
 			"name": "CARLA - make CarlaUE4",
 			"working_dir": "${project_path}/Unreal/CarlaUE4",
-			"file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+			"file_regex": "Unreal\\/CarlaUE4\\/([^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
 			"syntax": "Packages/Makefile/Make Output.sublime-syntax",
 			"linux":
 			{
@@ -86,7 +89,7 @@
 		{
 			"name": "CARLA - make CarlaUE4 ARGS=-clean",
 			"working_dir": "${project_path}/Unreal/CarlaUE4",
-			"file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+			"file_regex": "Unreal\\/CarlaUE4\\/([^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
 			"syntax": "Packages/Makefile/Make Output.sublime-syntax",
 			"linux":
 			{
@@ -96,7 +99,7 @@
 		{
 			"name": "CARLA - make CarlaUE4Editor",
 			"working_dir": "${project_path}/Unreal/CarlaUE4",
-			"file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+			"file_regex": "Unreal\\/CarlaUE4\\/([^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
 			"syntax": "Packages/Makefile/Make Output.sublime-syntax",
 			"linux":
 			{
@@ -106,7 +109,7 @@
 		{
 			"name": "CARLA - make CarlaUE4Editor ARGS=-clean",
 			"working_dir": "${project_path}/Unreal/CarlaUE4",
-			"file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+			"file_regex": "Unreal\\/CarlaUE4\\/([^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
 			"syntax": "Packages/Makefile/Make Output.sublime-syntax",
 			"linux":
 			{

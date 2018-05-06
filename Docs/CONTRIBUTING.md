@@ -28,7 +28,7 @@ Please check first the list of [feature requests][frlink]. If it is not there
 and you think is a feature that might be interesting for users, please submit
 your request as a new issue.
 
-[frlink]: https://github.com/carla-simulator/carla/issues?q=is%3Aissue+is%3Aopen+label%3A%22feature+request%22
+[frlink]: https://github.com/carla-simulator/carla/issues?q=is%3Aissue+is%3Aopen+label%3A%22feature+request%22+sort%3Acomments-desc
 
 Improving documentation
 -----------------------
@@ -55,13 +55,13 @@ Code contributions
 So you are considering making a code contribution, great! we love to have
 contributions from the community.
 
-Before starting hands-on on coding, please check out the
-[projects page][projectslink] to see if we are already working on that, it would
+Before starting hands-on on coding, please check out our
+[issue board][wafflelink] to see if we are already working on that, it would
 be a pity putting an effort into something just to discover that someone else
 was already working on that. In case of doubt or to discuss how to proceed,
 please contact one of us (or send an email to carla.simulator@gmail.com).
 
-[projectslink]: https://github.com/carla-simulator/carla/projects/1
+[wafflelink]: https://waffle.io/carla-simulator/carla
 
 #### Where can I learn more about Unreal Engine?
 
@@ -101,7 +101,7 @@ spawned. Note that the blueprint can call back C++ functions, for instance for
 getting the random engine. This way there is a back-and-forth communication
 between C++ code and blueprints.
 
-[capturelink]: https://github.com/carla-simulator/carla/blob/master/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/SceneCaptureToDiskCamera.h
+[capturelink]: https://github.com/carla-simulator/carla/blob/master/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/SceneCaptureToDiskCamera.h
 
 #### Coding standard
 

@@ -1,5 +1,4 @@
-CARLA Server
-============
+<h1>CARLA Server</h1>
 
 Build
 -----
@@ -28,7 +27,7 @@ Three consecutive ports are used,
 each of these ports has an associated thread that sends/reads data
 asynchronuosly.
 
-###### World thread
+<h4>World thread</h4>
 
 Server reads one, writes one. Always protobuf messages.
 
@@ -38,7 +37,7 @@ Server reads one, writes one. Always protobuf messages.
     [server] EpisodeReady
     ...repeat...
 
-###### Measurements thread
+<h4>Measurements thread</h4>
 
 Server only writes, first measurements message then the bulk of raw images.
 
@@ -48,10 +47,11 @@ Server only writes, first measurements message then the bulk of raw images.
 
 Every image is an array of uint32's
 
-    [width, height, type, color[0], color[1],...]
+    [width, height, type, FOV, color[0], color[1],...]
 
-where each color is an [FColor][fcolorlink] (BGRA) as stored in Unreal Engine,
-and the possible types of images are
+where FOV is the horizontal field of view of the camera as float, each color is
+an [FColor][fcolorlink] (BGRA) as stored in Unreal Engine, and the possible
+types of images are
 
     type = 0  None                  (RGB without any post-processing)
     type = 1  SceneFinal            (RGB with post-processing present at the scene)
@@ -62,7 +62,7 @@ The measurements message is explained in detail [here](measurements.md).
 
 [fcolorlink]: https://docs.unrealengine.com/latest/INT/API/Runtime/Core/Math/FColor/index.html "FColor API Documentation"
 
-###### Control thread
+<h4>Control thread</h4>
 
 Server only reads, client sends Control message every frame.
 

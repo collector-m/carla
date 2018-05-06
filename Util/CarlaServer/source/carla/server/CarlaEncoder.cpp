@@ -11,6 +11,8 @@
 #include "carla/ArrayView.h"
 #include "carla/Debug.h"
 #include "carla/Logging.h"
+#include "carla/server/CarlaSceneDescription.h"
+#include "carla/server/RequestNewEpisode.h"
 
 #include "carla/server/carla_server.pb.h"
 
@@ -21,6 +23,10 @@ namespace server {
 
   static auto start_spots(const carla_scene_description &values) {
     return array_view::make_const(values.player_start_spots, values.number_of_player_start_spots);
+  }
+
+  static auto sensors(const carla_scene_description &values) {
+    return array_view::make_const(values.sensors, values.number_of_sensors);
   }
 
   static auto agents(const carla_measurements &values) {
@@ -48,6 +54,25 @@ namespace server {
     Set(lhs->mutable_rotation(), rhs.rotation);
   }
 
+  static void Set(cs::BoundingBox *lhs, const carla_bounding_box &rhs) {
+    DEBUG_ASSERT(lhs != nullptr);
+    Set(lhs->mutable_transform(), rhs.transform);
+    Set(lhs->mutable_extent(), rhs.extent);
+  }
+
+  static void Set(cs::Sensor *lhs, const carla_sensor_definition &rhs) {
+    DEBUG_ASSERT(lhs != nullptr);
+    lhs->set_id(rhs.id);
+    lhs->set_name(std::string(rhs.name));
+    lhs->set_type([&](){
+      switch (rhs.type) {
+        case CARLA_SERVER_CAMERA:             return cs::Sensor::CAMERA;
+        case CARLA_SERVER_LIDAR_RAY_CAST:     return cs::Sensor::LIDAR_RAY_CAST;
+        default:                              return cs::Sensor::UNKNOWN;
+      }
+    }());
+  }
+
   static void Set(cs::Control *lhs, const carla_control &rhs) {
     DEBUG_ASSERT(lhs != nullptr);
     lhs->set_steer(rhs.steer);
@@ -60,14 +85,14 @@ namespace server {
   static void SetVehicle(cs::Vehicle *lhs, const carla_agent &rhs) {
     DEBUG_ASSERT(lhs != nullptr);
     Set(lhs->mutable_transform(), rhs.transform);
-    Set(lhs->mutable_box_extent(), rhs.box_extent);
+    Set(lhs->mutable_bounding_box(), rhs.bounding_box);
     lhs->set_forward_speed(rhs.forward_speed);
   }
 
   static void SetPedestrian(cs::Pedestrian *lhs, const carla_agent &rhs) {
     DEBUG_ASSERT(lhs != nullptr);
     Set(lhs->mutable_transform(), rhs.transform);
-    Set(lhs->mutable_box_extent(), rhs.box_extent);
+    Set(lhs->mutable_bounding_box(), rhs.bounding_box);
     lhs->set_forward_speed(rhs.forward_speed);
   }
 
@@ -99,6 +124,8 @@ namespace server {
         return SetTrafficLight(lhs->mutable_traffic_light(), rhs, cs::TrafficLight::YELLOW);
       case CARLA_SERVER_AGENT_TRAFFICLIGHT_RED:
         return SetTrafficLight(lhs->mutable_traffic_light(), rhs, cs::TrafficLight::RED);
+      default:
+        log_error("invalid agent type");
     }
   }
 
@@ -108,7 +135,14 @@ namespace server {
     for (auto &spot : start_spots(values)) {
       Set(message->add_player_start_spots(), spot);
     }
+    for (auto &sensor : sensors(values)) {
+      Set(message->add_sensors(), sensor);
+    }
     return Protobuf::Encode(*message);
+  }
+
+  std::string CarlaEncoder::Encode(const CarlaSceneDescription &values) {
+    return values.pop_scene();
   }
 
   std::string CarlaEncoder::Encode(const carla_episode_ready &values) {
@@ -121,12 +155,14 @@ namespace server {
   std::string CarlaEncoder::Encode(const carla_measurements &values) {
     static thread_local auto *message = _protobuf.CreateMessage<cs::Measurements>();
     DEBUG_ASSERT(message != nullptr);
+    message->set_frame_number(values.frame_number);
     message->set_platform_timestamp(values.platform_timestamp);
     message->set_game_timestamp(values.game_timestamp);
     // Player measurements.
     auto *player = message->mutable_player_measurements();
     DEBUG_ASSERT(player != nullptr);
     Set(player->mutable_transform(), values.player_measurements.transform);
+    Set(player->mutable_bounding_box(), values.player_measurements.bounding_box);
     Set(player->mutable_acceleration(), values.player_measurements.acceleration);
     player->set_forward_speed(values.player_measurements.forward_speed);
     player->set_collision_vehicles(values.player_measurements.collision_vehicles);

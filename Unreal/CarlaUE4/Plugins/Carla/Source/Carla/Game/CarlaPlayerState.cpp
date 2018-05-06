@@ -7,6 +7,8 @@
 #include "Carla.h"
 #include "CarlaPlayerState.h"
 
+#include "CoreGlobals.h"
+
 void ACarlaPlayerState::Reset()
 {
   Super::Reset();
@@ -15,7 +17,6 @@ void ACarlaPlayerState::Reset()
   CollisionIntensityCars = 0.0f;
   CollisionIntensityPedestrians = 0.0f;
   CollisionIntensityOther = 0.0f;
-  Images.Empty();
 }
 
 void ACarlaPlayerState::CopyProperties(APlayerState *PlayerState)
@@ -26,6 +27,7 @@ void ACarlaPlayerState::CopyProperties(APlayerState *PlayerState)
     ACarlaPlayerState *Other = Cast<ACarlaPlayerState>(PlayerState);
     if (Other != nullptr)
     {
+      FrameNumber = Other->FrameNumber;
       FramesPerSecond = Other->FramesPerSecond;
       PlatformTimeStamp = Other->PlatformTimeStamp;
       GameTimeStamp = Other->GameTimeStamp;
@@ -44,7 +46,6 @@ void ACarlaPlayerState::CopyProperties(APlayerState *PlayerState)
       CollisionIntensityOther = Other->CollisionIntensityOther;
       OtherLaneIntersectionFactor = Other->OtherLaneIntersectionFactor;
       OffRoadIntersectionFactor = Other->OffRoadIntersectionFactor;
-      Images = Other->Images;
       UE_LOG(LogCarla, Log, TEXT("Copied properties of ACarlaPlayerState"));
     }
   }
@@ -76,6 +77,7 @@ static int32 RoundToMilliseconds(float Seconds)
 
 void ACarlaPlayerState::UpdateTimeStamp(float DeltaSeconds)
 {
+  FrameNumber = GFrameCounter;
   FramesPerSecond = 1.0f / DeltaSeconds;
   PlatformTimeStamp = RoundToMilliseconds(FPlatformTime::Seconds());
   GameTimeStamp += RoundToMilliseconds(DeltaSeconds);

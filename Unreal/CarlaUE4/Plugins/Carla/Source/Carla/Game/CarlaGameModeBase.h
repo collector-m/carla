@@ -7,21 +7,22 @@
 #pragma once
 
 #include "GameFramework/GameModeBase.h"
-#include "AI/VehicleSpawnerBase.h"
-#include "AI/WalkerSpawnerBase.h"
-#include "CarlaGameControllerBase.h"
+
 #include "DynamicWeather.h"
-#include "MockGameControllerSettings.h"
+#include "Game/CarlaGameControllerBase.h"
+#include "Game/CarlaGameInstance.h"
+#include "Game/MockGameControllerSettings.h"
+#include "Vehicle/VehicleSpawnerBase.h"
+#include "Walker/WalkerSpawnerBase.h"
+
 #include "CarlaGameModeBase.generated.h"
 
 class ACarlaVehicleController;
 class APlayerStart;
 class ASceneCaptureCamera;
+class UCarlaGameInstance;
 class UTaggerDelegate;
-
-/**
- *
- */
+class UCarlaSettingsDelegate;
 UCLASS(HideCategories=(ActorTick))
 class CARLA_API ACarlaGameModeBase : public AGameModeBase
 {
@@ -37,7 +38,21 @@ public:
 
   virtual void BeginPlay() override;
 
+  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
   virtual void Tick(float DeltaSeconds) override;
+
+  FDataRouter &GetDataRouter()
+  {
+    check(GameInstance != nullptr);
+    return GameInstance->GetDataRouter();
+  }
+
+  UFUNCTION(BlueprintPure, Category="CARLA Settings")
+  UCarlaSettingsDelegate *GetCARLASettingsDelegate()
+  {
+    return CarlaSettingsDelegate;
+  }
 
 protected:
 
@@ -61,7 +76,7 @@ private:
 
   void RegisterPlayer(AController &NewPlayer);
 
-  void AttachCaptureCamerasToPlayer();
+  void AttachSensorsToPlayer();
 
   void TagActorsForSemanticSegmentation();
 
@@ -73,7 +88,7 @@ private:
       AController *Player,
       TArray<APlayerStart *> &UnOccupiedStartPoints);
 
-  CarlaGameControllerBase *GameController;
+  ICarlaGameControllerBase *GameController;
 
   UPROPERTY()
   UCarlaGameInstance *GameInstance;
@@ -83,6 +98,9 @@ private:
 
   UPROPERTY()
   UTaggerDelegate *TaggerDelegate;
+
+  UPROPERTY()
+  UCarlaSettingsDelegate* CarlaSettingsDelegate;
 
   UPROPERTY()
   ADynamicWeather *DynamicWeather;

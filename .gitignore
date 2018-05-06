@@ -26,4 +26,6 @@ Util/Build
 __pycache__
 _benchmarks_results
 _images*
+_out
+_site
 core

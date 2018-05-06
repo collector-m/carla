@@ -22,15 +22,15 @@ For instructions on how to use and compile CARLA, check out
 
 If you want to benchmark your model in the same conditions as in our CoRL’17
 paper, check out
-[Benchmarking](http://carla.readthedocs.io/en/latest/benchmark/).
+[Benchmarking](http://carla.readthedocs.io/en/latest/benchmark_start/).
 
 News
 ----
 
-- 05.02.2018 CARLA 0.7.1 available for Windows too, [release](https://github.com/carla-simulator/carla/releases/tag/0.7.1).
+- 23.04.2018 CARLA 0.8.2 released: [post](http://carla.org/2018/04/23/release-0.8.2/), [change log](https://github.com/carla-simulator/carla/blob/master/CHANGELOG.md#carla-082), [release](https://github.com/carla-simulator/carla/releases/tag/0.8.2).
+- 05.04.2018 CARLA 0.8.1 released: [post](http://carla.org/2018/04/05/release-0.8.1/), [change log](https://github.com/carla-simulator/carla/blob/master/CHANGELOG.md#carla-081), [release](https://github.com/carla-simulator/carla/releases/tag/0.8.1).
+- 27.03.2018 CARLA 0.8.0 released: [post](http://carla.org/2018/03/27/release-0.8.0/), [change log](https://github.com/carla-simulator/carla/blob/master/CHANGELOG.md#carla-080), [release](https://github.com/carla-simulator/carla/releases/tag/0.8.0).
 - 25.01.2018 CARLA 0.7.1 released: [change log](https://github.com/carla-simulator/carla/blob/master/CHANGELOG.md#carla-071), [release](https://github.com/carla-simulator/carla/releases/tag/0.7.1).
-- 28.11.2017 CARLA 0.7.0 released: [change log](https://github.com/carla-simulator/carla/blob/master/CHANGELOG.md#carla-070), [release](https://github.com/carla-simulator/carla/releases/tag/0.7.0).
-- 15.11.2017 CARLA 0.6.0 released: [change log](https://github.com/carla-simulator/carla/blob/master/CHANGELOG.md#carla-060), [release](https://github.com/carla-simulator/carla/releases/tag/0.6.0).
 
 Roadmap
 -------
@@ -38,12 +38,10 @@ Roadmap
 We are continuously working on improving CARLA, and we appreciate contributions
 from the community. Our most immediate goals are:
 
-- Releasing the methods evaluated in the CARLA paper
-- Adding a LiDAR sensor
-- Allowing for flexible and user-friendly import and editing of maps
-- Allowing the users to control non-player characters (and therefore set up user-specified scenarios)
-
-We will post a detailed roadmap and contribution guidelines soon - stay tuned!
+- [ ] Releasing the methods evaluated in the CARLA paper
+- [x] Adding a Lidar sensor
+- [ ] Allowing for flexible and user-friendly import and editing of maps
+- [ ] Allowing the users to control non-player characters (and therefore set up user-specified scenarios)
 
 Paper
 -----
@@ -94,13 +92,6 @@ F.A.Q.
 If you run into problems, check our
 [FAQ](http://carla.readthedocs.io/en/latest/faq/).
 
-Jobs
-----
-
-We are currently looking for a new programmer to join our team
-
-  * [C++ (UE4) Programmer](https://drive.google.com/open?id=1Hx0eUgpXl95d4IL9meEGhJECgSRos1T1)
-
 License
 -------
 
@@ -108,13 +99,4 @@ CARLA specific code is distributed under MIT License.
 
 CARLA specific assets are distributed under CC-BY License.
 
-Note that UE4 itself and the UE4 free automotive materials follow their own
-license terms.
-
-CARLA uses free automotive materials from Epic Games. For compiling CARLA, these
-materials must be downloaded from the UE4 marketplace and manually linked in
-CARLA following the instructions provided in the documentation.
-
-CARLA uses pedestrians created with Adobe Fuse, which is a free tool for that
-purpose. Currently, we cannot redistribute these pedestrians models. They can
-only be used in the provided executable.
+Note that UE4 itself follows its own license terms.
