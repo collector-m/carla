@@ -9,6 +9,7 @@
 #include "Traffic/TrafficSignBase.h"
 
 #include "Traffic/TrafficLightState.h"
+#include "Traffic/TrafficLightComponent.h"
 
 #include "TrafficLightBase.generated.h"
 
@@ -16,7 +17,8 @@ class ACarlaWheeledVehicle;
 class AWheeledVehicleAIController;
 
 UCLASS()
-class CARLA_API ATrafficLightBase : public ATrafficSignBase {
+class CARLA_API ATrafficLightBase : public ATrafficSignBase
+{
 
   GENERATED_BODY()
 
@@ -24,31 +26,69 @@ public:
 
   ATrafficLightBase(const FObjectInitializer &ObjectInitializer);
 
-protected:
-
-  virtual void OnConstruction(const FTransform &Transform) override;
-
-#if WITH_EDITOR
-  virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent) override;
-#endif // WITH_EDITOR
-
-public:
-
   UFUNCTION(Category = "Traffic Light", BlueprintCallable)
-  ETrafficLightState GetTrafficLightState() const
-  {
-    return State;
-  }
+  ETrafficLightState GetTrafficLightState() const;
 
   UFUNCTION(Category = "Traffic Light", BlueprintCallable)
   void SetTrafficLightState(ETrafficLightState State);
 
-  /// Loop over traffic light states.
-  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
-  void SwitchTrafficLightState();
-
   UFUNCTION(Category = "Traffic Light", BlueprintCallable)
   void NotifyWheeledVehicle(ACarlaWheeledVehicle *Vehicle);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  void UnNotifyWheeledVehicle(ACarlaWheeledVehicle *Vehicle);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  void SetGreenTime(float InGreenTime);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  float GetGreenTime() const;
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  void SetYellowTime(float InYellowTime);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  float GetYellowTime() const;
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  void SetRedTime(float InRedTime);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  float GetRedTime() const;
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  float GetElapsedTime() const;
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  void SetTimeIsFrozen(bool InTimeIsFrozen);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  bool GetTimeIsFrozen() const;
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  void SetPoleIndex(int InPoleIndex);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  int GetPoleIndex() const;
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  TArray<ATrafficLightBase *> GetGroupTrafficLights() const;
+
+  UFUNCTION(Category = "Traffic Light", BlueprintCallable)
+  void SetGroupTrafficLights(TArray<ATrafficLightBase *> InGroupTrafficLights);
+
+  // used from replayer
+  void SetElapsedTime(float InElapsedTime);
+
+  UFUNCTION(Category = "Traffic Light", BlueprintPure)
+  UTrafficLightComponent* GetTrafficLightComponent();
+
+  const UTrafficLightComponent* GetTrafficLightComponent() const;
+
+  // Compatibility old traffic light system with traffic light components
+  void LightChangedCompatibility(ETrafficLightState NewLightState);
+
+  void AddTimeToRecorder();
 
 protected:
 
@@ -57,9 +97,15 @@ protected:
 
 private:
 
-  UPROPERTY(Category = "Traffic Light", EditAnywhere)
-  ETrafficLightState State = ETrafficLightState::Red;
-
   UPROPERTY(Category = "Traffic Light", VisibleAnywhere)
   TArray<AWheeledVehicleAIController *> Vehicles;
+
+  UPROPERTY(Category = "Traffic Light", VisibleAnywhere)
+  int PoleIndex = 0;
+
+  UPROPERTY(Category = "Traffic Light", VisibleAnywhere)
+  TArray<ATrafficLightBase *> GroupTrafficLights;
+
+  UPROPERTY(Category = "Traffic Light", EditAnywhere)
+  UTrafficLightComponent * TrafficLightComponent = nullptr;
 };

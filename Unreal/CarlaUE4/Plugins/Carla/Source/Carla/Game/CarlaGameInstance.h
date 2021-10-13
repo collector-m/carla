@@ -8,13 +8,18 @@
 
 #include "Engine/GameInstance.h"
 
-#include "Game/CarlaGameControllerBase.h"
-#include "Game/DataRouter.h"
+#include "Carla/Game/CarlaEngine.h"
+#include "Carla/Recorder/CarlaRecorder.h"
+#include "Carla/Server/CarlaServer.h"
+
+#include <compiler/disable-ue4-macros.h>
+#include <carla/rpc/MapLayer.h>
+#include <carla/rpc/OpendriveGenerationParameters.h>
+#include <compiler/enable-ue4-macros.h>
 
 #include "CarlaGameInstance.generated.h"
 
 class UCarlaSettings;
-struct FMockGameControllerSettings;
 
 /// The game instance contains elements that must be kept alive in between
 /// levels. It is instantiate once per game.
@@ -28,15 +33,6 @@ public:
   UCarlaGameInstance();
 
   ~UCarlaGameInstance();
-
-  void InitializeGameControllerIfNotPresent(
-      const FMockGameControllerSettings &MockControllerSettings);
-
-  ICarlaGameControllerBase &GetGameController()
-  {
-    check(GameController != nullptr);
-    return *GameController;
-  }
 
   UCarlaSettings &GetCarlaSettings()
   {
@@ -57,17 +53,72 @@ public:
     return CarlaSettings;
   }
 
-  FDataRouter &GetDataRouter()
+  UFUNCTION(BlueprintCallable)
+  UCarlaEpisode *GetCarlaEpisode()
   {
-    return DataRouter;
+    return CarlaEngine.GetCurrentEpisode();
+  }
+
+  void NotifyInitGame()
+  {
+    CarlaEngine.NotifyInitGame(GetCarlaSettings());
+  }
+
+  void NotifyBeginEpisode(UCarlaEpisode &Episode)
+  {
+    CarlaEngine.NotifyBeginEpisode(Episode);
+  }
+
+  void NotifyEndEpisode()
+  {
+    CarlaEngine.NotifyEndEpisode();
+  }
+
+  const FCarlaServer &GetServer() const
+  {
+    return CarlaEngine.GetServer();
+  }
+
+  void SetOpendriveGenerationParameters(
+      const carla::rpc::OpendriveGenerationParameters & Parameters)
+  {
+    GenerationParameters = Parameters;
+  }
+
+  const carla::rpc::OpendriveGenerationParameters&
+      GetOpendriveGenerationParameters() const
+  {
+    return GenerationParameters;
+  }
+
+  UFUNCTION(Category = "Carla Game Instance", BlueprintCallable)
+  void SetMapLayer(int32 MapLayer)
+  {
+    CurrentMapLayer = MapLayer;
+  }
+
+  UFUNCTION(Category = "Carla Game Instance", BlueprintCallable)
+  int32 GetCurrentMapLayer() const
+  {
+    return CurrentMapLayer;
   }
 
 private:
 
   UPROPERTY(Category = "CARLA Settings", EditAnywhere)
-  UCarlaSettings *CarlaSettings;
+  UCarlaSettings *CarlaSettings = nullptr;
 
-  FDataRouter DataRouter;
+  FCarlaEngine CarlaEngine;
 
-  TUniquePtr<ICarlaGameControllerBase> GameController;
+  UPROPERTY()
+  ACarlaRecorder *Recorder = nullptr;
+
+  carla::rpc::OpendriveGenerationParameters GenerationParameters;
+
+  UPROPERTY(Category = "CARLA Game Instance", EditAnywhere)
+  int32 CurrentMapLayer = static_cast<int32>(carla::rpc::MapLayer::All);
+
+  UPROPERTY()
+  FString _MapPath;
+
 };

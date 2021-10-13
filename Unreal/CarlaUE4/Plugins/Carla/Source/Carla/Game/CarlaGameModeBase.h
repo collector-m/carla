@@ -6,23 +6,29 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 
-#include "DynamicWeather.h"
-#include "Game/CarlaGameControllerBase.h"
-#include "Game/CarlaGameInstance.h"
-#include "Game/MockGameControllerSettings.h"
-#include "Vehicle/VehicleSpawnerBase.h"
-#include "Walker/WalkerSpawnerBase.h"
+#include <compiler/disable-ue4-macros.h>
+#include <boost/optional.hpp>
+#include <compiler/enable-ue4-macros.h>
+
+#include "Carla/Actor/CarlaActorFactory.h"
+#include "Carla/Game/CarlaEpisode.h"
+#include "Carla/Game/CarlaGameInstance.h"
+#include "Carla/Game/TaggerDelegate.h"
+#include "Carla/OpenDrive/OpenDrive.h"
+#include "Carla/Recorder/CarlaRecorder.h"
+#include "Carla/Sensor/SceneCaptureSensor.h"
+#include "Carla/Settings/CarlaSettingsDelegate.h"
+#include "Carla/Traffic/TrafficLightManager.h"
+#include "Carla/Util/ObjectRegister.h"
+#include "Carla/Weather/Weather.h"
+#include "MapGen/LargeMapManager.h"
 
 #include "CarlaGameModeBase.generated.h"
 
-class ACarlaVehicleController;
-class APlayerStart;
-class ASceneCaptureCamera;
-class UCarlaGameInstance;
-class UTaggerDelegate;
-class UCarlaSettingsDelegate;
+/// Base class for the CARLA Game Mode.
 UCLASS(HideCategories=(ActorTick))
 class CARLA_API ACarlaGameModeBase : public AGameModeBase
 {
@@ -32,82 +38,143 @@ public:
 
   ACarlaGameModeBase(const FObjectInitializer& ObjectInitializer);
 
-  virtual void InitGame(const FString &MapName, const FString &Options, FString &ErrorMessage) override;
-
-  virtual void RestartPlayer(AController *NewPlayer) override;
-
-  virtual void BeginPlay() override;
-
-  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-  virtual void Tick(float DeltaSeconds) override;
-
-  FDataRouter &GetDataRouter()
+  const UCarlaEpisode &GetCarlaEpisode() const
   {
-    check(GameInstance != nullptr);
-    return GameInstance->GetDataRouter();
+    check(Episode != nullptr);
+    return *Episode;
   }
 
-  UFUNCTION(BlueprintPure, Category="CARLA Settings")
-  UCarlaSettingsDelegate *GetCARLASettingsDelegate()
+  const boost::optional<carla::road::Map>& GetMap() const {
+    return Map;
+  }
+
+  const FString GetFullMapPath() const;
+
+  // get path relative to Content folder
+  const FString GetRelativeMapPath() const;
+
+  UFUNCTION(Exec, Category = "CARLA Game Mode")
+  void DebugShowSignals(bool enable);
+
+  UFUNCTION(BlueprintCallable, Category = "CARLA Game Mode")
+  ATrafficLightManager* GetTrafficLightManager();
+
+  UFUNCTION(Category = "Carla Game Mode", BlueprintCallable)
+  const TArray<FTransform>& GetSpawnPointsTransforms() const{
+    return SpawnPointsTransforms;
+  }
+
+  UFUNCTION(Category = "Carla Game Mode", BlueprintCallable, CallInEditor, Exec)
+  TArray<FBoundingBox> GetAllBBsOfLevel(uint8 TagQueried = 0xFF) const;
+
+  UFUNCTION(Category = "Carla Game Mode", BlueprintCallable, CallInEditor, Exec)
+  TArray<FEnvironmentObject> GetEnvironmentObjects(uint8 QueriedTag = 0xFF) const
   {
-    return CarlaSettingsDelegate;
+    return ObjectRegister->GetEnvironmentObjects(QueriedTag);
+  }
+
+  void EnableEnvironmentObjects(const TSet<uint64>& EnvObjectIds, bool Enable);
+
+  void EnableOverlapEvents();
+
+  void CheckForEmptyMeshes();
+
+  UFUNCTION(Category = "Carla Game Mode", BlueprintCallable, CallInEditor, Exec)
+  void LoadMapLayer(int32 MapLayers);
+
+  UFUNCTION(Category = "Carla Game Mode", BlueprintCallable, CallInEditor, Exec)
+  void UnLoadMapLayer(int32 MapLayers);
+
+  UFUNCTION(Category = "Carla Game Mode")
+  ULevel* GetULevelFromName(FString LevelName);
+
+  UFUNCTION(BlueprintCallable, Category = "Carla Game Mode")
+  void OnLoadStreamLevel();
+
+  UFUNCTION(BlueprintCallable, Category = "Carla Game Mode")
+  void OnUnloadStreamLevel();
+
+  ALargeMapManager* GetLMManager() const {
+    return LMManager;
   }
 
 protected:
 
-  /** Used only when networking is disabled. */
-  UPROPERTY(Category = "Mock CARLA Controller", EditAnywhere, BlueprintReadOnly, meta = (ExposeFunctionCategories = "Mock CARLA Controller"))
-  FMockGameControllerSettings MockGameControllerSettings;
+  void InitGame(const FString &MapName, const FString &Options, FString &ErrorMessage) override;
 
-  /** The class of DynamicWeather to spawn. */
-  UPROPERTY(Category = "CARLA Classes", EditAnywhere, BlueprintReadOnly)
-  TSubclassOf<ADynamicWeather> DynamicWeatherClass;
+  void RestartPlayer(AController *NewPlayer) override;
 
-  /** The class of VehicleSpawner to spawn. */
-  UPROPERTY(Category = "CARLA Classes", EditAnywhere, BlueprintReadOnly)
-  TSubclassOf<AVehicleSpawnerBase> VehicleSpawnerClass;
+  void BeginPlay() override;
 
-  /** The class of WalkerSpawner to spawn. */
-  UPROPERTY(Category = "CARLA Classes", EditAnywhere, BlueprintReadOnly)
-  TSubclassOf<AWalkerSpawnerBase> WalkerSpawnerClass;
+  void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+  void Tick(float DeltaSeconds) override;
 
 private:
 
-  void RegisterPlayer(AController &NewPlayer);
+  void SpawnActorFactories();
 
-  void AttachSensorsToPlayer();
+  void StoreSpawnPoints();
 
-  void TagActorsForSemanticSegmentation();
+  void GenerateSpawnPoints();
 
-  /// Iterate all the APlayerStart present in the world and add the ones with
-  /// unoccupied locations to @a UnOccupiedStartPoints.
-  ///
-  /// @return APlayerStart if "Play from Here" was used while in PIE mode.
-  APlayerStart *FindUnOccupiedStartPoints(
-      AController *Player,
-      TArray<APlayerStart *> &UnOccupiedStartPoints);
+  void ParseOpenDrive();
 
-  ICarlaGameControllerBase *GameController;
+  void RegisterEnvironmentObjects();
+
+  void ConvertMapLayerMaskToMapNames(int32 MapLayer, TArray<FName>& OutLevelNames);
+
+  void OnEpisodeSettingsChanged(const FEpisodeSettings &Settings);
 
   UPROPERTY()
-  UCarlaGameInstance *GameInstance;
+  UCarlaGameInstance *GameInstance = nullptr;
 
   UPROPERTY()
-  ACarlaVehicleController *PlayerController;
+  UTaggerDelegate *TaggerDelegate = nullptr;
 
   UPROPERTY()
-  UTaggerDelegate *TaggerDelegate;
+  UCarlaSettingsDelegate *CarlaSettingsDelegate = nullptr;
 
   UPROPERTY()
-  UCarlaSettingsDelegate* CarlaSettingsDelegate;
+  UCarlaEpisode *Episode = nullptr;
 
   UPROPERTY()
-  ADynamicWeather *DynamicWeather;
+  ACarlaRecorder *Recorder = nullptr;
 
   UPROPERTY()
-  AVehicleSpawnerBase *VehicleSpawner;
+  UObjectRegister* ObjectRegister = nullptr;
+
+  /// The class of Weather to spawn.
+  UPROPERTY(Category = "CARLA Game Mode", EditAnywhere)
+  TSubclassOf<AWeather> WeatherClass;
+
+  /// List of actor spawners that will be used to define and spawn the actors
+  /// available in game.
+  UPROPERTY(Category = "CARLA Game Mode", EditAnywhere)
+  TSet<TSubclassOf<ACarlaActorFactory>> ActorFactories;
 
   UPROPERTY()
-  AWalkerSpawnerBase *WalkerSpawner;
+  TArray<FTransform> SpawnPointsTransforms;
+
+  UPROPERTY()
+  TArray<ACarlaActorFactory *> ActorFactoryInstances;
+
+  UPROPERTY()
+  ATrafficLightManager* TrafficLightManager = nullptr;
+
+  ALargeMapManager* LMManager = nullptr;
+
+  FDelegateHandle OnEpisodeSettingsChangeHandle;
+
+  boost::optional<carla::road::Map> Map;
+
+  int PendingLevelsToLoad = 0;
+  int PendingLevelsToUnLoad = 0;
+
+  bool ReadyToRegisterObjects = false;
+
+  // We keep a global uuid to allow the load/unload layer methods to be called
+  // in the same tick
+  int32 LatentInfoUUID = 0;
+
 };

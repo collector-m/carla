@@ -6,55 +6,114 @@
 
 #pragma once
 
-#include "GameFramework/Actor.h"
+#include "Carla/Game/CarlaEpisode.h"
+#include "Carla/Sensor/DataStream.h"
+#include "Carla/Util/RandomEngine.h"
 
-#include "Sensor/SensorDataSink.h"
-#include "Settings/SensorDescription.h"
+#include "GameFramework/Actor.h"
 
 #include "Sensor.generated.h"
 
+struct FActorDescription;
+
 /// Base class for sensors.
-UCLASS(Abstract, hidecategories=(Collision, Attachment, Actor))
+UCLASS(Abstract, hidecategories = (Collision, Attachment, Actor))
 class CARLA_API ASensor : public AActor
 {
   GENERATED_BODY()
 
 public:
 
-  ASensor(const FObjectInitializer& ObjectInitializer);
+  ASensor(const FObjectInitializer &ObjectInitializer);
 
-  uint32 GetId() const
+  void SetEpisode(const UCarlaEpisode &InEpisode)
   {
-    return Id;
+    Episode = &InEpisode;
   }
 
-  void AttachToActor(AActor *Actor);
+  virtual void Set(const FActorDescription &Description);
 
-  void SetSensorDataSink(TSharedPtr<ISensorDataSink> InSensorDataSink)
+  virtual void BeginPlay();
+
+  /// Replace the FDataStream associated with this sensor.
+  ///
+  /// @warning Do not change the stream after BeginPlay. It is not thread-safe.
+  void SetDataStream(FDataStream InStream)
   {
-    SensorDataSink = InSensorDataSink;
+    Stream = std::move(InStream);
   }
+
+  FDataStream MoveDataStream()
+  {
+    return std::move(Stream);
+  }
+
+  /// Return the token that allows subscribing to this sensor's stream.
+  auto GetToken() const
+  {
+    return Stream.GetToken();
+  }
+
+  void Tick(const float DeltaTime) final;
+
+  virtual void PrePhysTick(float DeltaSeconds) {}
+  virtual void PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaSeconds) {}
+
+  UFUNCTION(BlueprintCallable)
+  URandomEngine *GetRandomEngine()
+  {
+    return RandomEngine;
+  }
+
+  UFUNCTION(BlueprintCallable)
+  int32 GetSeed() const
+  {
+    return Seed;
+  }
+
+  UFUNCTION(BlueprintCallable)
+  void SetSeed(int32 InSeed);
 
 protected:
 
-  void Set(const USensorDescription &SensorDescription)
+  void PostActorCreated() override;
+
+  void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+
+  const UCarlaEpisode &GetEpisode() const
   {
-    Id = SensorDescription.GetId();
+    check(Episode != nullptr);
+    return *Episode;
   }
 
-  void WriteSensorData(const FSensorDataView &SensorData) const
+  /// Return the FDataStream associated with this sensor.
+  ///
+  /// You need to provide a reference to self, this is necessary for template
+  /// deduction.
+  template <typename SensorT>
+  FAsyncDataStream GetDataStream(const SensorT &Self)
   {
-    if (SensorDataSink.IsValid()) {
-      SensorDataSink->Write(SensorData);
-    } else {
-      UE_LOG(LogCarla, Warning, TEXT("Sensor %d has no data sink."), Id);
-    }
+    return Stream.MakeAsyncDataStream(Self, GetEpisode().GetElapsedGameTime());
   }
+
+  /// Seed of the pseudo-random engine.
+  UPROPERTY(Category = "Random Engine", EditAnywhere)
+  int32 Seed = 123456789;
+
+  /// Random Engine used to provide noise for sensor output.
+  UPROPERTY()
+  URandomEngine *RandomEngine = nullptr;
 
 private:
 
-  UPROPERTY(VisibleAnywhere)
-  uint32 Id;
+  void PostPhysTickInternal(UWorld *World, ELevelTick TickType, float DeltaSeconds);
 
-  TSharedPtr<ISensorDataSink> SensorDataSink = nullptr;
+  FDataStream Stream;
+
+  FDelegateHandle OnPostTickDelegate;
+
+  const UCarlaEpisode *Episode = nullptr;
+
+  /// Allows the sensor to tick with the tick rate from UE4.
+  bool ReadyToTick = false;
 };

@@ -8,7 +8,7 @@
 
 #include <queue>
 
-#include "GameFramework/PlayerController.h"
+#include "GameFramework/Controller.h"
 
 #include "Traffic/TrafficLightState.h"
 #include "Vehicle/VehicleControl.h"
@@ -21,7 +21,7 @@ class URoadMap;
 
 /// Wheeled vehicle controller with optional AI.
 UCLASS()
-class CARLA_API AWheeledVehicleAIController : public APlayerController
+class CARLA_API AWheeledVehicleAIController final : public AController
 {
   GENERATED_BODY()
 
@@ -29,28 +29,33 @@ class CARLA_API AWheeledVehicleAIController : public APlayerController
   /// @name Constructor and destructor
   // ===========================================================================
   /// @{
+
 public:
 
-  AWheeledVehicleAIController(const FObjectInitializer& ObjectInitializer);
+  AWheeledVehicleAIController(const FObjectInitializer &ObjectInitializer);
 
   ~AWheeledVehicleAIController();
 
   /// @}
   // ===========================================================================
-  /// @name APlayerController overrides
+  /// @name Controller overrides
   // ===========================================================================
   /// @{
+
 public:
 
-  virtual void Possess(APawn *aPawn) override;
+  void OnPossess(APawn *aPawn) override;
 
-  virtual void Tick(float DeltaTime) override;
+  void OnUnPossess() override;
+
+  void Tick(float DeltaTime) override;
 
   /// @}
   // ===========================================================================
   /// @name Possessed vehicle
   // ===========================================================================
   /// @{
+
 public:
 
   UFUNCTION(Category = "Wheeled Vehicle Controller", BlueprintCallable)
@@ -70,10 +75,16 @@ public:
     return Vehicle;
   }
 
+  /// @}
+  // ===========================================================================
+  /// @name Control options
+  // ===========================================================================
+  /// @{
+
   UFUNCTION(Category = "Wheeled Vehicle Controller", BlueprintCallable)
-  virtual bool IsPossessingThePlayer() const
+  void SetStickyControl(bool bEnabled)
   {
-    return false;
+    bControlIsSticky = bEnabled;
   }
 
   /// @}
@@ -81,6 +92,7 @@ public:
   /// @name Road map
   // ===========================================================================
   /// @{
+
 public:
 
   void SetRoadMap(URoadMap *InRoadMap)
@@ -99,6 +111,7 @@ public:
   /// @name Random engine
   // ===========================================================================
   /// @{
+
 public:
 
   UFUNCTION(Category = "Random Engine", BlueprintCallable)
@@ -113,6 +126,7 @@ public:
   /// @name Autopilot
   // ===========================================================================
   /// @{
+
 public:
 
   UFUNCTION(Category = "Wheeled Vehicle Controller", BlueprintCallable)
@@ -122,10 +136,11 @@ public:
   }
 
   UFUNCTION(Category = "Wheeled Vehicle Controller", BlueprintCallable)
-  void SetAutopilot(bool Enable)
+  void SetAutopilot(bool Enable, bool KeepState = false)
   {
-    if (IsAutopilotEnabled() != Enable) {
-      ConfigureAutopilot(Enable);
+    if (IsAutopilotEnabled() != Enable)
+    {
+      ConfigureAutopilot(Enable, KeepState);
     }
   }
 
@@ -137,13 +152,14 @@ public:
 
 private:
 
-  void ConfigureAutopilot(bool Enable);
+  void ConfigureAutopilot(const bool Enable, const bool KeepState = false);
 
   /// @}
   // ===========================================================================
   /// @name Traffic
   // ===========================================================================
   /// @{
+
 public:
 
   /// Get current speed limit in km/h.
@@ -174,42 +190,26 @@ public:
     TrafficLightState = InTrafficLightState;
   }
 
-  /// Set a fixed route to follow if autopilot is enabled.
+  /// Get traffic light currently affecting this vehicle.
   UFUNCTION(Category = "Wheeled Vehicle Controller", BlueprintCallable)
-  void SetFixedRoute(const TArray<FVector> &Locations, bool bOverwriteCurrent=true);
-
-  /// @}
-  // ===========================================================================
-  /// @name AI
-  // ===========================================================================
-  /// @{
-protected:
-
-  const FVehicleControl &GetAutopilotControl() const
+  ATrafficLightBase *GetTrafficLight() const
   {
-    return AutopilotControl;
+    return TrafficLight;
   }
 
-private:
+  /// Set traffic light currently affecting this vehicle.
+  UFUNCTION(Category = "Wheeled Vehicle Controller", BlueprintCallable)
+  void SetTrafficLight(ATrafficLightBase *InTrafficLight)
+  {
+    TrafficLight = InTrafficLight;
+  }
 
-  void TickAutopilotController();
-
-  /// Returns steering value.
-  float GoToNextTargetLocation(FVector &Direction);
-
-  /// Returns steering value.
-  float CalcStreeringValue(FVector &Direction);
-
-  /// Returns throttle value.
-  float Stop(float Speed);
-
-  /// Returns throttle value.
-  float Move(float Speed);
+  /// Set a fixed route to follow if autopilot is enabled.
+  UFUNCTION(Category = "Wheeled Vehicle Controller", BlueprintCallable)
+  void SetFixedRoute(const TArray<FVector> &Locations, bool bOverwriteCurrent = true);
 
   /// @}
-  // ===========================================================================
-  // -- Member variables -------------------------------------------------------
-  // ===========================================================================
+
 private:
 
   UPROPERTY()
@@ -225,6 +225,9 @@ private:
   bool bAutopilotEnabled = false;
 
   UPROPERTY(VisibleAnywhere)
+  bool bControlIsSticky = true;
+
+  UPROPERTY(VisibleAnywhere)
   float SpeedLimit = 30.0f;
 
   UPROPERTY(VisibleAnywhere)
@@ -233,7 +236,8 @@ private:
   UPROPERTY(VisibleAnywhere)
   float MaximumSteerAngle = -1.0f;
 
-  FVehicleControl AutopilotControl;
+  UPROPERTY()
+  ATrafficLightBase *TrafficLight;
 
   std::queue<FVector> TargetLocations;
 };
